@@ -1,0 +1,8 @@
+*
+!build.sh
+!.dockerignore
+!.gitignore
+!Dockerfile
+!process.py
+!README.md
+!requirements.txt
