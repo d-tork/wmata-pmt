@@ -1,6 +1,6 @@
 """Process WMATA SmarTrip usage for PMT reimbursement."""
 from os import path
-import argparse
+import sys
 import pandas as pd
 import logging
 
@@ -12,31 +12,36 @@ logging.basicConfig(
 
 
 def main():
-    args = get_args()
-    filepath = path.normpath(path.join('/', 'src', args.filepath))
-    data = get_data(filepath)
+    raw_data = get_input()
+    data = convert_input_to_df(raw_data)
     data = add_day_of_week(data)
     data = drop_weekends(data)
+    data = parse_amounts(data)
+
+    display_data(data)
+    sum_amount_spent(data)
     write_out(data)
-    sum_refund_total(data)
 
 
-def get_args():
-    parser = argparse.ArgumentParser(description='Process WMATA usage.')
-    parser.add_argument('filepath', help='WMATA SmarTrip usage export.')
-    args = parser.parse_args()
-    return args
+def get_input(): 
+    file_contents = sys.stdin.readlines()
+    if not file_contents:
+        raise ValueError('No data passed. \
+            You must pipe it with " < filename.csv" after `docker run ...`.')
+    return file_contents
 
-
-def get_data(filepath): 
-    logger.info(f'source: {filepath}')
-    df = pd.read_csv(filepath)
+def convert_input_to_df(raw_data: list) -> pd.DataFrame:
+    no_whitespace_rows = [s.strip() for s in raw_data]
+    list_of_lists = [s.split(',') for s in no_whitespace_rows]
+    header_row = list_of_lists.pop(0)
+    df = pd.DataFrame(list_of_lists, columns=header_row)
     return df
 
 
 def add_day_of_week(df):
     df['Time'] = pd.to_datetime(df['Time'])
     df['day_of_week'] = df['Time'].dt.strftime('%a')
+    df = df.sort_values('Time')
     return df
 
 
@@ -45,10 +50,32 @@ def drop_weekends(df):
     df_filtered = df.loc[~df['day_of_week'].isin(weekends)]
     return df_filtered
 
+
+def parse_amounts(df):
+    df['amount'] = (df['Change (+/-)']
+        .replace(r'[\$,)]', '', regex=True)
+        .replace(r'[(]', '-', regex=True)
+    )
+    df['amount'] = pd.to_numeric(df['amount'])
+    return df
+
+
+def sum_amount_spent(df):
+    negative_amounts = df.loc[df['amount'] < 0]
+    total_spent = negative_amounts['amount'].sum()
+    logger.info(f'\n\n total spent: ${total_spent:.2f}')
+
+
+def display_data(df):
+    cols = ['Time', 'day_of_week', 'Operator', 'amount']
+    display_df = df.loc[df['amount'] < 0, cols]
+    print('\n', display_df)
+
+
 def write_out(df):
     year_month = get_year_month(df)
     outfile = f'{year_month}-metro.csv'
-    outpath = path.join('/', 'src', outfile)
+    outpath = path.join('/', 'data', outfile)
     df.to_csv(outpath, index=False)
 
 
@@ -56,16 +83,6 @@ def get_year_month(df) -> str:
     first_date = df['Time'].iloc[0]
     year_month = first_date.strftime('%Y-%m')
     return year_month
-
-
-def sum_refund_total(df):
-    df['amount'] = (df['Change (+/-)']
-        .replace(r'[\$,)]', '', regex=True)
-        .replace(r'[(]', '-', regex=True)
-    )
-    df['amount'] = pd.to_numeric(df['amount'])
-    total_spent = df.loc[df['amount'] < 0, 'amount'].sum()
-    logger.info(f'total spent: ${total_spent:.2f}')
 
 
 if __name__ == '__main__':
