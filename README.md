@@ -3,7 +3,7 @@ Processes the raw WMATA SmarTrip usage download in order to sum up card usage on
 file with year-month in the name for uploading as receipt in EOL.
 
 ## Usage
-1. smartrip.wmata.com -> sign in
+1. https://smartrip.wmata.com -> sign in
 2. Choose **Metro card**
 3. **Use History**
 4. Select month, then **Submit**
