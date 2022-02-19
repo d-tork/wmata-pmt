@@ -10,7 +10,12 @@ file with year-month in the name for uploading as receipt in EOL.
 5. Transaction type: **Use**, then **Submit**
 6. **Export To Excel**
 7. Save to this folder
-8. Run the docker container, piping the CSV file to it:
+8. Use the runner script with the CSV file as an argument:
+```bash
+./runner.sh path/to/file.csv
+```
+
+Alternatively, run the docker image yourself, piping the CSV file to it:
 ```bash
 docker run --rm -i -v $(pwd):/data wmata_pmt:latest < [filename].csv
 ```
