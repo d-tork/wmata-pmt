@@ -17,7 +17,7 @@ file with year-month in the name for uploading as receipt in EOL.
 
 Alternatively, run the docker image yourself, piping the CSV file to it:
 ```bash
-docker run --rm -i -v $(pwd):/data wmata_pmt:latest < [filename].csv
+docker run --rm -i wmata_pmt:latest < infile.csv > outfile.csv
 ```
 
 ## Manual steps (in Excel)
