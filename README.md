@@ -12,7 +12,7 @@ file with year-month in the name for uploading as receipt in EOL.
 7. Save to this folder
 8. Use the runner script with the CSV file as an argument:
 ```bash
-./runner.sh path/to/file.csv
+./runner.sh path/to/file.csv path/to/output.csv
 ```
 
 Alternatively, run the docker image yourself, piping the CSV file to it:
